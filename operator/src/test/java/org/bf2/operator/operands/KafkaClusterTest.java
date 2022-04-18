@@ -35,6 +35,7 @@ import org.bf2.operator.operands.KafkaInstanceConfigurations.InstanceType;
 import org.bf2.operator.resources.v1alpha1.ManagedKafka;
 import org.bf2.operator.resources.v1alpha1.ManagedKafkaCondition.Reason;
 import org.bf2.operator.resources.v1alpha1.ManagedKafkaCondition.Status;
+import org.bf2.operator.resources.v1alpha1.Versions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -106,6 +107,27 @@ class KafkaClusterTest {
         Kafka kafka = kafkaCluster.kafkaFrom(mk, null);
 
         diffToExpected(kafka, "/expected/strimzi.yml");
+    }
+
+    @Test
+    void testManagedKafkaToKafka_StreamingUnitsTwo() throws IOException {
+        alternativeConfig(config -> {
+            config.getKafka().setOneInstancePerNode(false);
+            config.getKafka().setColocateWithZookeeper(false);
+            config.getExporter().setColocateWithZookeeper(false);
+        });
+
+        ManagedKafka mk = exampleManagedKafka("2Ti");
+        mk.getSpec().getCapacity().setIngressPerSec(Quantity.parse("100Mi"));
+        mk.getSpec().getCapacity().setEgressPerSec(Quantity.parse("200Mi"));
+        mk.getSpec().getCapacity().setMaxPartitions(3000);
+        mk.getSpec().getCapacity().setTotalMaxConnections(6000);
+        mk.getSpec().getCapacity().setTotalMaxConnections(200);
+        mk.getSpec().getVersions().setStrimzi(Versions.STRIMZI_CLUSTER_OPERATOR_V0_26_0_9);
+
+        Kafka kafka = kafkaCluster.kafkaFrom(mk, null);
+
+        diffToExpected(kafka, "/expected/strimzi_su2.yml");
     }
 
     private void alternativeConfig(Consumer<KafkaInstanceConfiguration> configModifier) throws JsonProcessingException, JsonMappingException {
